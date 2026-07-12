@@ -3,34 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Votre Ticket</title>
+    <title>Votre Ticket Évolutif</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body id="body-salle" class="bg-gray-100 p-6 font-sans text-center text-gray-800 flex flex-col items-center justify-center min-h-screen transition-all duration-500">
+<body id="body-salle" class="bg-gray-100 p-6 font-sans text-center text-gray-800 flex flex-col items-center justify-center min-h-screen transition-all duration-700">
 
     <div id="ecran-inscription" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md hidden">
-        <h1 class="text-2xl font-bold mb-2">Bienvenue au Cabinet</h1>
-        <p class="text-gray-500 mb-6">Prenez votre ticket virtuel en quelques secondes</p>
+        <h1 class="text-2xl font-bold mb-2">Prendre un Ticket</h1>
+        <p class="text-gray-500 mb-6 text-sm">Inscrivez-vous pour suivre votre position en direct</p>
         <div class="space-y-4">
-            <input type="text" id="nom-patient" placeholder="Votre Nom et Prénom" class="border p-3 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none text-lg">
-            <input type="text" id="phone-patient" placeholder="Numéro WhatsApp (ex: 0555...)" class="border p-3 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none text-lg">
-            <button onclick="prendreTicket()" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold w-full text-lg transition shadow">
-                Prendre mon Ticket
-            </button>
+            <input type="text" id="nom-patient" placeholder="Votre Nom complet" class="border p-3 rounded w-full outline-none text-lg">
+            <input type="text" id="phone-patient" placeholder="Numéro WhatsApp" class="border p-3 rounded w-full outline-none text-lg">
+            <button onclick="prendreTicket()" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold w-full text-lg transition shadow">Prendre mon Ticket</button>
         </div>
     </div>
 
-    <div id="ecran-ticket" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md hidden">
-        <h1 class="text-3xl font-bold mb-2" id="nom-affichage">Patient</h1>
-        <p class="text-gray-500 mb-6">Suivi de votre position en direct</p>
+    <div id="ecran-ticket" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md hidden transition-all duration-500">
+        <h1 class="text-3xl font-black mb-1" id="nom-affichage">-</h1>
+        <p class="text-gray-400 text-xs uppercase tracking-wider mb-6">Votre Ticket Virtuel</p>
         
-        <div id="box-compteur" class="bg-blue-50 p-6 rounded-lg mb-6 border border-blue-100">
-            <h2 id="texte-statut-haut" class="text-xl mb-2">Personnes avant vous :</h2>
-            <div id="compteur" class="text-6xl font-black text-blue-600">-</div>
+        <div id="box-compteur" class="bg-blue-50 p-6 rounded-xl mb-6 border border-blue-100 transition-all duration-500">
+            <h2 id="texte-statut-haut" class="text-sm font-bold text-gray-500 uppercase mb-2">Personnes avant vous</h2>
+            <div id="compteur" class="text-6xl font-black text-blue-600 transition-all duration-500">-</div>
         </div>
         
-        <p id="statut" class="text-sm text-gray-400 animate-pulse">Mise à jour en temps réel...</p>
+        <p id="statut" class="text-xs text-gray-400">Connexion sécurisée en cours...</p>
     </div>
 
     <script>
@@ -40,45 +38,45 @@
 
         var urlParams = new URLSearchParams(window.location.search);
         var cabinetId = urlParams.get('cabinet');
-
-        // Vérifier si le patient a déjà un ticket enregistré pour ce cabinet
         var monTicketId = localStorage.getItem('ticket_id_' + cabinetId);
+        var dernierStatutConnu = null;
+
+        // Génération d'un bip sonore moderne
+        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function biper() {
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = "sine"; osc.frequency.value = 523.25; // Note Do5
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 1.5);
+            osc.stop(audioCtx.currentTime + 1.5);
+        }
 
         function demarrer() {
-            if (!cabinetId) {
-                alert("Lien invalide. ID cabinet manquant.");
-                return;
-            }
-
+            if (!cabinetId) return alert("Erreur : ID Cabinet absent.");
             if (!monTicketId) {
-                // Pas encore inscrit -> Afficher le formulaire
                 document.getElementById('ecran-inscription').classList.remove('hidden');
             } else {
-                // Déjà inscrit -> Afficher le suivi de son ticket
                 document.getElementById('ecran-ticket').classList.remove('hidden');
                 suivreMonTicket();
             }
         }
 
-        // Action de validation du formulaire
         async function prendreTicket() {
             var nom = document.getElementById('nom-patient').value;
             var phone = document.getElementById('phone-patient').value;
-            
-            if (!nom) return alert('Veuillez entrer votre nom !');
+            if (!nom) return alert('Nom obligatoire');
 
-            var { data, error } = await db.from('file_attente').insert([{ 
+            var { data } = await db.from('file_attente').insert([{ 
                 nom_patient: nom, 
                 numero_whatsapp: phone,
                 medecin_id: cabinetId
             }]).select();
 
             if (data && data.length > 0) {
-                // Sauvegarder l'ID du ticket sur le téléphone
                 localStorage.setItem('ticket_id_' + cabinetId, data[0].id);
                 monTicketId = data[0].id;
-                
-                // Basculer l'affichage
                 document.getElementById('ecran-inscription').classList.add('hidden');
                 document.getElementById('ecran-ticket').classList.remove('hidden');
                 suivreMonTicket();
@@ -86,50 +84,81 @@
         }
 
         async function suivreMonTicket() {
-            // 1. Récupérer les infos de mon propre ticket
             var { data: monTicket } = await db.from('file_attente').select('*').eq('id', monTicketId).single();
-            
             if (!monTicket) {
-                // Si le ticket n'existe plus (ex: supprimé), on réinitialise la mémoire
                 localStorage.removeItem('ticket_id_' + cabinetId);
                 window.location.reload();
                 return;
             }
 
             document.getElementById('nom-affichage').innerText = monTicket.nom_patient;
+            
+            // Déclencheur sonore et vibrations si le statut change vers "appele"
+            if (monTicket.statut === 'appele' && dernierStatutConnu !== 'appele') {
+                biper();
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+            }
+            dernierStatutConnu = monTicket.statut;
+
+            var body = document.getElementById('body-salle');
+            var card = document.getElementById('ecran-ticket');
+            var box = document.getElementById('box-compteur');
+            var txtHaut = document.getElementById('texte-statut-haut');
+            var compteur = document.getElementById('compteur');
+            var statutTxt = document.getElementById('statut');
 
             if (monTicket.statut === 'appele') {
-                // ALERTE MAXIMUM : C'est le tour du patient !
-                document.getElementById('body-salle').className = "bg-green-500 p-6 font-sans text-center text-white flex flex-col items-center justify-center min-h-screen transition-all duration-500";
-                document.getElementById('box-compteur').className = "bg-white p-6 rounded-lg mb-6 border border-green-200 text-green-600 shadow-inner";
-                document.getElementById('texte-statut-haut').innerText = "C'EST À VOUS !";
-                document.getElementById('texte-statut-haut').className = "text-2xl font-bold uppercase tracking-wider text-green-600";
-                document.getElementById('compteur').innerText = "ENTREZ";
-                document.getElementById('compteur').className = "text-4xl font-black text-green-600 py-3 animate-bounce";
-                document.getElementById('statut').innerText = "Le médecin vous attend dans le cabinet.";
-                document.getElementById('statut').className = "text-sm text-white font-semibold";
-            } else {
-                // Toujours en attente : Calculer combien de personnes sont devant
-                var { count } = await db
-                    .from('file_attente')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('statut', 'en_attente')
-                    .eq('medecin_id', cabinetId)
-                    .lt('heure_arrivee', monTicket.heure_arrivee); // Uniquement ceux arrivés AVANT lui
+                body.className = "bg-green-500 p-6 font-sans flex flex-col items-center justify-center min-h-screen transition-all duration-700";
+                box.className = "bg-green-100 border border-green-300 p-6 rounded-xl mb-6 text-green-700 scale-105 transition-all duration-500";
+                txtHaut.innerText = "C'est votre tour !";
+                txtHaut.className = "text-md font-black tracking-widest text-green-800 animate-pulse";
+                compteur.innerText = "ENTREZ";
+                compteur.className = "text-4xl font-black text-green-700 py-2";
+                statutTxt.innerText = "Le médecin vous attend immédiatement.";
+                statutTxt.className = "text-xs text-white font-bold";
+            } 
+            else if (monTicket.statut === 'en_pause') {
+                body.className = "bg-orange-500 p-6 font-sans flex flex-col items-center justify-center min-h-screen transition-all duration-700";
+                box.className = "bg-orange-100 border border-orange-300 p-6 rounded-xl mb-6 text-orange-700";
+                txtHaut.innerText = "Appel manqué";
+                txtHaut.className = "text-sm font-bold text-orange-800";
+                compteur.innerText = "PAUSE";
+                compteur.className = "text-4xl font-black text-orange-700 py-2";
+                statutTxt.innerText = "Vous étiez absent. Signalez-vous au secrétariat.";
+                statutTxt.className = "text-xs text-white font-bold";
+            }
+            else if (monTicket.statut === 'termine') {
+                body.className = "bg-gray-200 p-6 font-sans flex flex-col items-center justify-center min-h-screen transition-all duration-700";
+                box.className = "bg-gray-100 border border-gray-300 p-6 rounded-xl mb-6 text-gray-500";
+                txtHaut.innerText = "Consultation close";
+                txtHaut.className = "text-sm font-bold text-gray-400";
+                compteur.innerText = "MERCI";
+                compteur.className = "text-4xl font-black text-gray-400 py-2";
+                statutTxt.innerText = "Bon rétablissement !";
+                statutTxt.className = "text-xs text-gray-400 font-semibold";
+            }
+            else {
+                // Statut : en_attente
+                body.className = "bg-gray-100 p-6 font-sans flex flex-col items-center justify-center min-h-screen transition-all duration-700";
+                box.className = "bg-blue-50 border border-blue-100 p-6 rounded-xl mb-6 text-blue-600";
+                txtHaut.innerText = "Personnes avant vous";
+                txtHaut.className = "text-sm font-bold text-gray-500 uppercase";
+                compteur.className = "text-6xl font-black text-blue-600";
+                statutTxt.className = "text-xs text-gray-400 animate-pulse";
+
+                var { count } = await db.from('file_attente').select('*', { count: 'exact', head: true })
+                    .eq('statut', 'en_attente').eq('medecin_id', cabinetId)
+                    .lt('heure_arrivee', monTicket.heure_arrivee);
                 
-                document.getElementById('compteur').innerText = count;
-                document.getElementById('statut').innerText = "Mise à jour en temps réel active";
+                compteur.innerText = count;
+                statutTxt.innerText = "Synchronisé avec le cabinet en direct";
             }
         }
 
-        // Écouter tous les changements de la table pour recalculer la position
-        if (cabinetId) {
-            db.channel('salle-attente')
-              .on('postgres_changes', { event: '*', schema: 'public', table: 'file_attente' }, payload => {
+            db.channel('live-salle')
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'file_attente' }, () => {
                   suivreMonTicket();
-              })
-              .subscribe();
-        }
+              }).subscribe();
 
         demarrer();
     </script>
