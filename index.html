@@ -87,6 +87,13 @@
             document.getElementById('lien-patient').href = lien;
 
             chargerListe();
+
+            // NOUVEAU : Écouter la base de données en temps réel pour le médecin
+            db.channel('dashboard-medecin')
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'file_attente' }, payload => {
+                  chargerListe();
+              })
+              .subscribe();
         }
 
         async function seDeconnecter() {
@@ -131,7 +138,6 @@
             
             document.getElementById('nom').value = '';
             document.getElementById('phone').value = '';
-            chargerListe();
         }
 
         async function appelerSuivant() {
@@ -145,8 +151,6 @@
 
             if (data && data.length > 0) {
                 await db.from('file_attente').update({ statut: 'appele' }).eq('id', data[0].id);
-                alert(`C'est au tour de : ${data[0].nom_patient}`);
-                chargerListe();
             } else {
                 alert('La file d\'attente est vide !');
             }
