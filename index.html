@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accès Médecin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 p-6 font-sans text-gray-800 min-h-screen flex items-center justify-center">
+
+    <div id="ecran-connexion" class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-6 text-center">Connexion Cabinet</h2>
+        <div class="space-y-4">
+            <input type="email" id="email" placeholder="Email du médecin" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="password" id="password" placeholder="Mot de passe" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none">
+            <div class="flex gap-2">
+                <button onclick="seConnecter()" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-bold w-full transition">Se connecter</button>
+                <button onclick="creerCompte()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 p-2 rounded font-bold w-full transition">Créer un compte</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard" class="bg-white p-6 rounded-lg shadow-md w-full max-w-2xl hidden">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">Gestion des Patients</h2>
+            <button onclick="seDeconnecter()" class="text-red-600 hover:underline text-sm font-semibold">Déconnexion</button>
+        </div>
+        
+        <div class="flex gap-2 mb-8">
+            <input type="text" id="nom" placeholder="Nom du patient" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="text" id="phone" placeholder="Numéro WhatsApp" class="border p-2 rounded w-full focus:ring-2 focus:ring-blue-500 outline-none">
+            <button onclick="ajouterPatient()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold transition">Ajouter</button>
+        </div>
+
+        <div class="bg-yellow-50 border border-yellow-200 p-3 rounded mb-6 text-sm text-yellow-800">
+            <b>Lien de votre salle d'attente :</b> <br>
+            <a id="lien-patient" target="_blank" class="text-blue-600 underline font-mono break-all"></a>
+        </div>
+
+        <h3 class="text-xl font-bold mb-4">File d'attente actuelle</h3>
+        <ul id="liste-attente" class="mb-6 space-y-2"></ul>
+        
+        <button onclick="appelerSuivant()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded text-xl font-bold w-full transition shadow-lg">
+            Appeler le Suivant
+        </button>
+    </div>
+
+    <script>
+        var supabaseUrl = 'https://ecjuqepvfuvepsxlquiu.supabase.co';
+        var supabaseKey = 'sb_publishable_C0qADTNee-jBxctsla6Saw_RGZMhegS';
+        var db = supabase.createClient(supabaseUrl, supabaseKey);
+        var userSession = null;
+
+        // Vérifier si le médecin est déjà connecté au démarrage
+        db.auth.getSession().then(({ data }) => {
+            if (data.session) {
+                activerDashboard(data.session.user);
+            }
+        });
+
+        async function creerCompte() {
+            var email = document.getElementById('email').value;
+            var password = document.getElementById('password').value;
+            var { data, error } = await db.auth.signUp({ email, password });
+            if (error) alert(error.message);
+            else alert("Compte créé ! Connectez-vous maintenant.");
+        }
+
+        async function seConnecter() {
+            var email = document.getElementById('email').value;
+            var password = document.getElementById('password').value;
+            var { data, error } = await db.auth.signInWithPassword({ email, password });
+            if (error) alert(error.message);
+            else activerDashboard(data.user);
+        }
+
+        function activerDashboard(user) {
+            userSession = user;
+            document.getElementById('ecran-connexion').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.body.classList.remove('items-center', 'justify-center');
+            
+            // Génération dynamique du lien unique pour ce cabinet
+            var lien = window.location.origin + '/patient.html?cabinet=' + user.id;
+            document.getElementById('lien-patient').innerText = lien;
+            document.getElementById('lien-patient').href = lien;
+
+            chargerListe();
+        }
+
+        async function seDeconnecter() {
+            await db.auth.signOut();
+            window.location.reload();
+        }
+
+        async function chargerListe() {
+            var { data } = await db
+                .from('file_attente')
+                .select('*')
+                .eq('statut', 'en_attente')
+                .eq('medecin_id', userSession.id)
+                .order('heure_arrivee', { ascending: true });
+            
+            var ul = document.getElementById('liste-attente');
+            ul.innerHTML = '';
+            
+            if (data && data.length > 0) {
+                data.forEach((patient, index) => {
+                    ul.innerHTML += `
+                        <li class="border-b pb-2 flex justify-between items-center text-lg">
+                            <span><b>#${index + 1}</b> - ${patient.nom_patient}</span>
+                            <span class="text-sm text-gray-500">${patient.numero_whatsapp || 'Pas de numéro'}</span>
+                        </li>`;
+                });
+            } else {
+                ul.innerHTML = '<li class="text-gray-500 italic">Salle d\'attente vide.</li>';
+            }
+        }
+
+        async function ajouterPatient() {
+            var nom = document.getElementById('nom').value;
+            var phone = document.getElementById('phone').value;
+            if (!nom) return alert('Le nom est obligatoire !');
+
+            await db.from('file_attente').insert([{ 
+                nom_patient: nom, 
+                numero_whatsapp: phone,
+                medecin_id: userSession.id
+            }]);
+            
+            document.getElementById('nom').value = '';
+            document.getElementById('phone').value = '';
+            chargerListe();
+        }
+
+        async function appelerSuivant() {
+            var { data } = await db
+                .from('file_attente')
+                .select('*')
+                .eq('statut', 'en_attente')
+                .eq('medecin_id', userSession.id)
+                .order('heure_arrivee', { ascending: true })
+                .limit(1);
+
+            if (data && data.length > 0) {
+                await db.from('file_attente').update({ statut: 'appele' }).eq('id', data[0].id);
+                alert(`C'est au tour de : ${data[0].nom_patient}`);
+                chargerListe();
+            } else {
+                alert('La file d\'attente est vide !');
+            }
+        }
+    </script>
+</body>
+</html>
