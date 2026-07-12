@@ -122,10 +122,10 @@
             }
         }
 
-        // Écouter les changements en temps réel
+        // Écouter tous les changements de la table pour recalculer la position
         if (cabinetId) {
             db.channel('salle-attente')
-              .on('postgres_changes', { event: '*', schema: 'public', table: 'file_attente', filter: 'medecin_id=eq.' + cabinetId }, payload => {
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'file_attente' }, payload => {
                   suivreMonTicket();
               })
               .subscribe();
