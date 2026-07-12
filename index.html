@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accès Médecin</title>
+    <title>Accès Médecin - V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-gray-100 p-6 font-sans text-gray-800 min-h-screen flex items-center justify-center">
 
-    <!-- ÉCRAN DE CONNEXION -->
     <div id="ecran-connexion" class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 class="text-2xl font-bold mb-6 text-center">Connexion Cabinet</h2>
         <div class="space-y-4">
@@ -22,12 +21,10 @@
         </div>
     </div>
 
-    <!-- TABLEAU DE BORD (Masqué par défaut) -->
-    <div id="dashboard" class="bg-white p-6 rounded-lg shadow-md w-full max-w-6xl hidden flex-col gap-6">
+    <div id="dashboard" class="bg-white p-6 rounded-lg shadow-md w-full max-w-7xl hidden flex-col gap-6">
         
-        <!-- En-tête -->
         <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg border">
-            <h2 class="text-2xl font-bold">Cabinet Médical</h2>
+            <h2 class="text-2xl font-bold">Cabinet Médical Pro</h2>
             <div class="flex items-center gap-4">
                 <span class="text-sm bg-yellow-100 text-yellow-800 px-3 py-1 rounded font-mono border border-yellow-200">
                     Lien patients : <a id="lien-patient" target="_blank" class="text-blue-600 underline"></a>
@@ -36,51 +33,62 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             
-            <!-- COLONNE GAUCHE : Action & En cours -->
-            <div class="space-y-6">
-                <!-- Action -->
+            <div class="space-y-4">
                 <div class="bg-white border p-4 rounded-lg shadow-sm">
-                    <h3 class="font-bold mb-3">Ajouter un patient</h3>
-                    <div class="flex flex-col gap-2">
-                        <input type="text" id="nom" placeholder="Nom du patient" class="border p-2 rounded w-full outline-none">
-                        <input type="text" id="phone" placeholder="Numéro WhatsApp" class="border p-2 rounded w-full outline-none">
-                        <button onclick="ajouterPatient()" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-bold transition">Ajouter</button>
+                    <h3 class="font-bold mb-3">Enregistrer un Patient</h3>
+                    <div class="space-y-2">
+                        <input type="text" id="nom" placeholder="Nom du patient" class="border p-2 rounded w-full text-sm outline-none">
+                        <input type="text" id="phone" placeholder="Numéro WhatsApp" class="border p-2 rounded w-full text-sm outline-none">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="ajouterPatient(false)" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded text-sm font-bold transition">Standard</button>
+                            <button onclick="ajouterPatient(true)" class="bg-red-600 hover:bg-red-700 text-white p-2 rounded text-sm font-bold transition">⚠️ Urgence</button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Patient actuel -->
-                <div class="bg-green-50 border border-green-200 p-4 rounded-lg shadow-sm text-center">
-                    <h3 class="text-green-800 font-bold mb-2">Patient en consultation</h3>
-                    <div id="patient-actuel" class="text-3xl font-black text-green-700 py-4">Aucun</div>
-                    <p id="heure-actuel" class="text-sm text-green-600"></p>
-                </div>
-
-                <button onclick="appelerSuivant()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg text-xl font-bold w-full transition shadow-md">
+                <button onclick="appelerSuivant()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-5 rounded-lg text-lg font-black w-full transition shadow-md uppercase tracking-wider">
                     Appeler le Suivant
                 </button>
             </div>
 
-            <!-- COLONNE MILIEU : File d'attente -->
-            <div class="bg-white border p-4 rounded-lg shadow-sm">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-lg">Salle d'attente</h3>
-                    <span id="compteur-attente" class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-bold">0</span>
+            <div class="space-y-4">
+                <div class="bg-green-50 border border-green-200 p-4 rounded-lg shadow-sm h-full flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-green-800 font-bold text-center border-b border-green-200 pb-2">En Consultation</h3>
+                        <div id="patient-actuel" class="text-2xl font-black text-green-700 text-center py-6">Aucun</div>
+                    </div>
+                    <div id="actions-consultation" class="hidden flex-col gap-2">
+                        <button id="btn-terminer" class="bg-green-600 hover:bg-green-700 text-white p-2 rounded font-bold text-sm transition">✓ Terminer la séance</button>
+                        <button id="btn-pause" class="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded font-bold text-sm transition">⏸ Absent / En pause</button>
+                    </div>
                 </div>
-                <ul id="liste-attente" class="space-y-2 overflow-y-auto max-h-96"></ul>
             </div>
 
-            <!-- COLONNE DROITE : Historique -->
+            <div class="space-y-4 md:col-span-1">
+                <div class="bg-white border p-4 rounded-lg shadow-sm">
+                    <div class="flex justify-between items-center mb-3 border-b pb-2">
+                        <h3 class="font-bold">File d'attente</h3>
+                        <span id="compteur-attente" class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">0</span>
+                    </div>
+                    <ul id="liste-attente" class="space-y-2 overflow-y-auto max-h-48 text-sm"></ul>
+                </div>
+
+                <div class="bg-orange-50 border border-orange-200 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-bold text-orange-800 mb-3 border-b border-orange-200 pb-2">Absents / En pause</h3>
+                    <ul id="liste-pause" class="space-y-2 overflow-y-auto max-h-48 text-sm"></ul>
+                </div>
+            </div>
+
             <div class="bg-white border p-4 rounded-lg shadow-sm">
-                <h3 class="font-bold text-lg mb-4">Historique du jour</h3>
-                <div class="overflow-y-auto max-h-96">
-                    <table class="w-full text-left text-sm">
+                <h3 class="font-bold mb-3 border-b pb-2">Historique du Jour</h3>
+                <div class="overflow-y-auto max-h-96 text-xs">
+                    <table class="w-full text-left">
                         <thead>
-                            <tr class="border-b text-gray-500">
-                                <th class="pb-2">Nom</th>
-                                <th class="pb-2">Appelé à</th>
-                                <th class="pb-2">Attente</th>
+                            <tr class="text-gray-400 border-b">
+                                <th class="pb-1">Nom</th>
+                                <th class="pb-1 text-right">Attente</th>
                             </tr>
                         </thead>
                         <tbody id="liste-historique"></tbody>
@@ -101,20 +109,20 @@
             if (data.session) activerDashboard(data.session.user);
         });
 
-        async function creerCompte() {
-            var email = document.getElementById('email').value;
-            var password = document.getElementById('password').value;
-            var { error } = await db.auth.signUp({ email, password });
-            if (error) alert(error.message);
-            else alert("Compte créé ! Connectez-vous maintenant.");
-        }
-
         async function seConnecter() {
             var email = document.getElementById('email').value;
             var password = document.getElementById('password').value;
             var { data, error } = await db.auth.signInWithPassword({ email, password });
             if (error) alert(error.message);
             else activerDashboard(data.user);
+        }
+
+        async function creerCompte() {
+            var email = document.getElementById('email').value;
+            var password = document.getElementById('password').value;
+            var { error } = await db.auth.signUp({ email, password });
+            if (error) alert(error.message);
+            else alert("Compte créé !");
         }
 
         function activerDashboard(user) {
@@ -125,14 +133,14 @@
             document.body.classList.remove('items-center', 'justify-center');
             
             var lien = window.location.origin + '/patient.html?cabinet=' + user.id;
-            document.getElementById('lien-patient').innerText = lien;
+            document.getElementById('lien-patient').innerText = "Ouvrir";
             document.getElementById('lien-patient').href = lien;
 
-            chargerListes();
+            chargerDonnies();
 
-            db.channel('dashboard-medecin')
+            db.channel('global-dashboard')
               .on('postgres_changes', { event: '*', schema: 'public', table: 'file_attente' }, () => {
-                  chargerListes();
+                  chargerDonnies();
               }).subscribe();
         }
 
@@ -141,83 +149,79 @@
             window.location.reload();
         }
 
-        function formaterHeure(dateString) {
-            if (!dateString) return '-';
-            var d = new Date(dateString);
-            return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        }
+        async function chargerDonnies() {
+            var debutJournee = new Date(); debutJournee.setHours(0,0,0,0);
 
-        function calculerAttente(arrivee, appel) {
-            if (!arrivee || !appel) return '-';
-            var diffMs = new Date(appel) - new Date(arrivee);
-            var diffMins = Math.round(diffMs / 60000);
-            if (diffMins < 60) return diffMins + ' min';
-            return Math.floor(diffMins / 60) + 'h' + (diffMins % 60) + 'm';
-        }
+            // 1. Récupérer toutes les données du jour pour ce médecin
+            var { data: patients } = await db.from('file_attente')
+                .select('*')
+                .eq('medecin_id', userSession.id)
+                .gte('heure_arrivee', debutJournee.toISOString());
 
-        async function chargerListes() {
-            var debutJournee = new Date();
-            debutJournee.setHours(0,0,0,0);
+            patients = patients || [];
 
-            // 1. Charger la salle d'attente
-            var { data: enAttente } = await db.from('file_attente')
-                .select('*').eq('statut', 'en_attente').eq('medecin_id', userSession.id)
-                .order('heure_arrivee', { ascending: true });
-            
-            document.getElementById('compteur-attente').innerText = enAttente ? enAttente.length : 0;
-            var ul = document.getElementById('liste-attente');
-            ul.innerHTML = '';
-            
-            if (enAttente && enAttente.length > 0) {
-                enAttente.forEach((p, i) => {
-                    ul.innerHTML += `<li class="border-b pb-2 text-md flex flex-col">
-                        <span><b>#${i + 1}</b> ${p.nom_patient}</span>
-                        <span class="text-xs text-gray-400">Arrivé à ${formaterHeure(p.heure_arrivee)}</span>
-                    </li>`;
-                });
+            // Filtrer par listes
+            var enAttente = patients.filter(p => p.statut === 'en_attente').sort((a,b) => new Date(a.heure_arrivee) - new Date(b.heure_arrivee));
+            var enConsultation = patients.filter(p => p.statut === 'appele').sort((a,b) => new Date(b.heure_appel) - new Date(a.heure_appel));
+            var enPause = patients.filter(p => p.statut === 'en_pause').sort((a,b) => new Date(b.heure_appel) - new Date(a.heure_appel));
+            var termines = patients.filter(p => p.statut === 'termine').sort((a,b) => new Date(b.heure_appel) - new Date(a.heure_appel));
+
+            // Rendre Liste Attente
+            document.getElementById('compteur-attente').innerText = enAttente.length;
+            var ulAttente = document.getElementById('liste-attente');
+            ulAttente.innerHTML = enAttente.map((p, i) => `
+                <li class="border-b pb-1.5 flex justify-between items-center">
+                    <span class="truncate"><b>#${i+1}</b> ${p.nom_patient}</span>
+                    ${p.numero_whatsapp === 'URGENT' ? '<span class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">Urgent</span>' : ''}
+                </li>
+            `).join('') || '<li class="text-gray-400 italic">Aucun patient</li>';
+
+            // Rendre Patient Actuel en Consultation
+            var divActuel = document.getElementById('patient-actuel');
+            var divActions = document.getElementById('actions-consultation');
+            if (enConsultation.length > 0) {
+                var c = enConsultation[0];
+                divActuel.innerHTML = `<span class="block text-xl font-bold">${c.nom_patient}</span>`;
+                divActions.classList.remove('hidden');
+                divActions.classList.add('flex');
+                
+                document.getElementById('btn-terminer').onclick = () => changerStatut(c.id, 'termine');
+                document.getElementById('btn-pause').onclick = () => changerStatut(c.id, 'en_pause');
             } else {
-                ul.innerHTML = '<li class="text-gray-400 italic">Vide.</li>';
+                divActuel.innerText = "Aucun";
+                divActions.classList.add('hidden');
             }
 
-            // 2. Charger l'historique et le patient actuel
-            var { data: historique } = await db.from('file_attente')
-                .select('*').eq('statut', 'appele').eq('medecin_id', userSession.id)
-                .gte('heure_appel', debutJournee.toISOString())
-                .order('heure_appel', { ascending: false });
+            // Rendre Patients en Pause
+            var ulPause = document.getElementById('liste-pause');
+            ulPause.innerHTML = enPause.map(p => `
+                <li class="border-b pb-1 flex justify-between items-center bg-white p-1 rounded border">
+                    <span class="truncate font-semibold">${p.nom_patient}</span>
+                    <button onclick="changerStatut('${p.id}', 'appele')" class="bg-orange-500 hover:bg-orange-600 text-white text-xs px-2 py-1 rounded font-bold">Rappeler</button>
+                </li>
+            `).join('') || '<li class="text-gray-400 italic">Aucun</li>';
 
+            // Rendre Historique
             var tbody = document.getElementById('liste-historique');
-            tbody.innerHTML = '';
-
-            if (historique && historique.length > 0) {
-                // Le premier de l'historique est le patient actuel
-                var actuel = historique[0];
-                document.getElementById('patient-actuel').innerText = actuel.nom_patient;
-                document.getElementById('heure-actuel').innerText = "Appelé à " + formaterHeure(actuel.heure_appel);
-
-                // Les suivants (ou tous) dans la table historique
-                historique.forEach((p) => {
-                    tbody.innerHTML += `<tr class="border-b">
-                        <td class="py-2">${p.nom_patient}</td>
-                        <td class="py-2 text-gray-600">${formaterHeure(p.heure_appel)}</td>
-                        <td class="py-2 text-gray-600">${calculerAttente(p.heure_arrivee, p.heure_appel)}</td>
-                    </tr>`;
-                });
-            } else {
-                document.getElementById('patient-actuel').innerText = "Aucun";
-                document.getElementById('heure-actuel').innerText = "";
-                tbody.innerHTML = '<tr><td colspan="3" class="text-gray-400 italic py-2">Aucun historique.</td></tr>';
-            }
+            tbody.innerHTML = termines.map(p => {
+                var diff = p.heure_appel && p.heure_arrivee ? Math.round((new Date(p.heure_appel) - new Date(p.heure_arrivee)) / 60000) : 0;
+                return `<tr class="border-b"><td class="py-1.5 truncate max-w-[100px]">${p.nom_patient}</td><td class="py-1.5 text-right text-gray-500">${diff} min</td></tr>`;
+            }).join('') || '<tr><td class="text-gray-400 italic py-2">Vide</td></tr>';
         }
 
-        async function ajouterPatient() {
+        async function ajouterPatient(estUrgent) {
             var nom = document.getElementById('nom').value;
-            var phone = document.getElementById('phone').value;
-            if (!nom) return alert('Le nom est obligatoire !');
+            var phone = estUrgent ? 'URGENT' : document.getElementById('phone').value;
+            if (!nom) return alert('Nom obligatoire');
+
+            // Si c'est urgent, on triche proprement sur l'heure d'arrivée en la reculant d'un jour pour le propulser en haut du tri SQL
+            var heureArrivee = estUrgent ? new Date(Date.now() - 86400000).toISOString() : new Date().toISOString();
 
             await db.from('file_attente').insert([{ 
                 nom_patient: nom, 
                 numero_whatsapp: phone,
-                medecin_id: userSession.id
+                medecin_id: userSession.id,
+                heure_arrivee: heureArrivee
             }]);
             
             document.getElementById('nom').value = '';
@@ -230,13 +234,17 @@
                 .order('heure_arrivee', { ascending: true }).limit(1);
 
             if (data && data.length > 0) {
-                await db.from('file_attente').update({ 
-                    statut: 'appele',
-                    heure_appel: new Date().toISOString()
-                }).eq('id', data[0].id);
+                changerStatut(data[0].id, 'appele');
             } else {
-                alert('La file d\'attente est vide !');
+                alert('Plus personne en attente !');
             }
+        }
+
+        async function changerStatut(id, statut) {
+            await db.from('file_attente').update({ 
+                statut: statut,
+                heure_appel: statut === 'appele' ? new Date().toISOString() : undefined
+            }).eq('id', id);
         }
     </script>
 </body>
