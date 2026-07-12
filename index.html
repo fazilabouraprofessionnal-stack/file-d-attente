@@ -89,6 +89,7 @@
                             <tr class="text-gray-400 border-b">
                                 <th class="pb-1">Nom</th>
                                 <th class="pb-1 text-right">Attente</th>
+                                <th class="pb-1 text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody id="liste-historique"></tbody>
@@ -152,7 +153,6 @@
         async function chargerDonnies() {
             var debutJournee = new Date(); debutJournee.setHours(0,0,0,0);
 
-            // 1. Récupérer toutes les données du jour pour ce médecin
             var { data: patients } = await db.from('file_attente')
                 .select('*')
                 .eq('medecin_id', userSession.id)
@@ -160,7 +160,6 @@
 
             patients = patients || [];
 
-            // Filtrer par listes
             var enAttente = patients.filter(p => p.statut === 'en_attente').sort((a,b) => new Date(a.heure_arrivee) - new Date(b.heure_arrivee));
             var enConsultation = patients.filter(p => p.statut === 'appele').sort((a,b) => new Date(b.heure_appel) - new Date(a.heure_appel));
             var enPause = patients.filter(p => p.statut === 'en_pause').sort((a,b) => new Date(b.heure_appel) - new Date(a.heure_appel));
@@ -201,12 +200,18 @@
                 </li>
             `).join('') || '<li class="text-gray-400 italic">Aucun</li>';
 
-            // Rendre Historique
+            // Rendre Historique avec bouton Réintégrer
             var tbody = document.getElementById('liste-historique');
             tbody.innerHTML = termines.map(p => {
                 var diff = p.heure_appel && p.heure_arrivee ? Math.round((new Date(p.heure_appel) - new Date(p.heure_arrivee)) / 60000) : 0;
-                return `<tr class="border-b"><td class="py-1.5 truncate max-w-[100px]">${p.nom_patient}</td><td class="py-1.5 text-right text-gray-500">${diff} min</td></tr>`;
-            }).join('') || '<tr><td class="text-gray-400 italic py-2">Vide</td></tr>';
+                return `<tr class="border-b">
+                    <td class="py-1.5 truncate max-w-[100px]">${p.nom_patient}</td>
+                    <td class="py-1.5 text-right text-gray-500">${diff} min</td>
+                    <td class="py-1.5 text-right">
+                        <button onclick="reintegrerPatient('${p.id}')" class="bg-gray-200 hover:bg-gray-300 px-2 py-0.5 rounded text-xs font-bold transition" title="Remettre en liste d'attente">↺</button>
+                    </td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="3" class="text-gray-400 italic py-2">Vide</td></tr>';
         }
 
         async function ajouterPatient(estUrgent) {
@@ -214,8 +219,11 @@
             var phone = estUrgent ? 'URGENT' : document.getElementById('phone').value;
             if (!nom) return alert('Nom obligatoire');
 
-            // Si c'est urgent, on triche proprement sur l'heure d'arrivée en la reculant d'un jour pour le propulser en haut du tri SQL
-            var heureArrivee = estUrgent ? new Date(Date.now() - 86400000).toISOString() : new Date().toISOString();
+            var debutJournee = new Date();
+            debutJournee.setHours(0,0,0,0);
+            
+            // L'urgence reçoit l'heure de minuit aujourd'hui, elle est donc listée 1ère
+            var heureArrivee = estUrgent ? debutJournee.toISOString() : new Date().toISOString();
 
             await db.from('file_attente').insert([{ 
                 nom_patient: nom, 
@@ -244,6 +252,15 @@
             await db.from('file_attente').update({ 
                 statut: statut,
                 heure_appel: statut === 'appele' ? new Date().toISOString() : undefined
+            }).eq('id', id);
+        }
+
+        async function reintegrerPatient(id) {
+            // Remet le patient à la fin de la file d'attente actuelle
+            await db.from('file_attente').update({ 
+                statut: 'en_attente',
+                heure_arrivee: new Date().toISOString(),
+                heure_appel: null
             }).eq('id', id);
         }
     </script>
