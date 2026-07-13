@@ -6,14 +6,15 @@
     <title>Cabinet Médical Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body class="bg-slate-50 p-4 md:p-8 font-sans text-slate-800 min-h-screen">
 
     <div id="ecran-connexion" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border mt-20">
         <h2 class="text-2xl font-bold mb-6 text-center text-slate-700">Accès Médecin</h2>
         <div class="space-y-4">
-            <input type="email" id="email" placeholder="Email" class="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
-            <input type="password" id="password" placeholder="Mot de passe" class="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
+            <input type="email" id="email" placeholder="Email" class="border p-3 rounded-lg w-full outline-none bg-slate-50">
+            <input type="password" id="password" placeholder="Mot de passe" class="border p-3 rounded-lg w-full outline-none bg-slate-50">
             <div class="flex gap-2 pt-2">
                 <button onclick="seConnecter()" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold w-full transition">Connexion</button>
                 <button onclick="creerCompte()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 p-3 rounded-lg font-bold w-full transition">Créer un compte</button>
@@ -21,48 +22,41 @@
         </div>
     </div>
 
-    <div id="dashboard" class="max-w-7xl mx-auto hidden flex-col gap-6">
+    <div id="app-main" class="max-w-7xl mx-auto hidden flex-col gap-6">
         
-        <div class="flex justify-between items-center bg-white p-5 rounded-xl border shadow-sm">
-            <h2 class="text-2xl font-bold text-slate-800">Tableau de bord</h2>
-            <div class="flex items-center gap-4">
-                <span class="text-sm bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-100 font-medium">
-                    Lien public : <a id="lien-patient" target="_blank" class="font-bold underline ml-1">Ouvrir</a>
-                </span>
-                <button onclick="seDeconnecter()" class="text-slate-500 hover:text-red-600 text-sm font-bold transition">Déconnexion</button>
+        <div class="flex justify-between items-center bg-white p-2 rounded-xl border shadow-sm">
+            <div class="flex gap-2">
+                <button onclick="changerOnglet('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-lg font-bold bg-blue-50 text-blue-700 transition">Tableau de bord</button>
+                <button onclick="changerOnglet('stats')" id="nav-stats" class="px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-50 transition">Statistiques</button>
+                <button onclick="changerOnglet('settings')" id="nav-settings" class="px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-50 transition">Paramètres</button>
             </div>
+            <button onclick="seDeconnecter()" class="px-4 py-2 text-slate-500 hover:text-red-600 text-sm font-bold transition">Déconnexion</button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+        <div id="onglet-dashboard" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="flex flex-col gap-6">
-                
                 <div class="bg-emerald-50 border border-emerald-200 p-6 rounded-xl shadow-sm flex flex-col items-center justify-center min-h-[200px]">
                     <h3 class="text-emerald-800 font-bold uppercase tracking-wider text-sm mb-4">En Consultation</h3>
                     <div id="patient-actuel" class="text-3xl font-black text-emerald-700 text-center mb-6">Aucun</div>
-                    
                     <div id="actions-consultation" class="hidden w-full grid grid-cols-2 gap-2">
-                        <button id="btn-pause" class="bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 p-2 rounded-lg font-bold text-sm transition">⏸ Mettre en pause</button>
-                        <button id="btn-terminer" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg font-bold text-sm transition">✓ Terminer</button>
+                        <button id="btn-pause" class="bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 p-2 rounded-lg font-bold text-sm">⏸ Pause</button>
+                        <button id="btn-terminer" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg font-bold text-sm">✓ Terminer</button>
                     </div>
                 </div>
-
-                <button onclick="appelerSuivant()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-6 rounded-xl text-xl font-black w-full transition shadow-md uppercase tracking-widest">
+                <button onclick="appelerSuivant()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-6 rounded-xl text-xl font-black w-full shadow-md uppercase tracking-widest">
                     Appeler le Suivant
                 </button>
-
                 <div class="bg-white border p-5 rounded-xl shadow-sm">
                     <h3 class="font-bold text-slate-700 mb-4">Nouveau Patient</h3>
                     <div class="space-y-3">
-                        <input type="text" id="nom" placeholder="Nom complet" class="border p-2.5 rounded-lg w-full text-sm outline-none bg-slate-50 focus:ring-2 focus:ring-blue-500">
-                        <input type="text" id="phone" placeholder="Numéro WhatsApp" class="border p-2.5 rounded-lg w-full text-sm outline-none bg-slate-50 focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="nom" placeholder="Nom complet" class="border p-2.5 rounded-lg w-full text-sm outline-none bg-slate-50">
+                        <input type="text" id="phone" placeholder="Numéro WhatsApp" class="border p-2.5 rounded-lg w-full text-sm outline-none bg-slate-50">
                         <div class="grid grid-cols-3 gap-2 pt-1">
-                            <button onclick="ajouterPatient(false)" class="col-span-2 bg-slate-800 hover:bg-slate-900 text-white p-2.5 rounded-lg text-sm font-bold transition">Ajouter (Standard)</button>
-                            <button onclick="ajouterPatient(true)" class="col-span-1 bg-red-100 hover:bg-red-200 text-red-700 border border-red-200 p-2.5 rounded-lg text-sm font-bold transition">Urgence</button>
+                            <button onclick="ajouterPatient(false)" class="col-span-2 bg-slate-800 hover:bg-slate-900 text-white p-2.5 rounded-lg text-sm font-bold">Ajouter</button>
+                            <button onclick="ajouterPatient(true)" class="col-span-1 bg-red-100 hover:bg-red-200 text-red-700 border border-red-200 p-2.5 rounded-lg text-sm font-bold">Urgence</button>
                         </div>
                     </div>
                 </div>
-
             </div>
 
             <div class="flex flex-col gap-6">
@@ -73,9 +67,8 @@
                     </div>
                     <ul id="liste-attente" class="space-y-2.5 overflow-y-auto max-h-[400px] text-sm"></ul>
                 </div>
-
                 <div class="bg-amber-50 border border-amber-200 p-5 rounded-xl shadow-sm">
-                    <h3 class="font-bold text-amber-800 mb-3 border-b border-amber-200 pb-2 text-sm uppercase tracking-wide">Absents / En pause</h3>
+                    <h3 class="font-bold text-amber-800 mb-3 border-b border-amber-200 pb-2 text-sm uppercase tracking-wide">En pause</h3>
                     <ul id="liste-pause" class="space-y-2 overflow-y-auto max-h-[200px] text-sm"></ul>
                 </div>
             </div>
@@ -95,8 +88,43 @@
                     </table>
                 </div>
             </div>
-
         </div>
+
+        <div id="onglet-stats" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white border p-8 rounded-xl shadow-sm text-center flex flex-col justify-center">
+                <h3 class="text-slate-500 font-bold uppercase tracking-wider mb-2">Patients vus aujourd'hui</h3>
+                <div id="stat-total" class="text-6xl font-black text-blue-600">0</div>
+            </div>
+            <div class="bg-white border p-8 rounded-xl shadow-sm text-center flex flex-col justify-center">
+                <h3 class="text-slate-500 font-bold uppercase tracking-wider mb-2">Temps d'attente moyen</h3>
+                <div id="stat-attente" class="text-6xl font-black text-emerald-600">0 <span class="text-2xl">min</span></div>
+            </div>
+        </div>
+
+        <div id="onglet-settings" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white border p-6 rounded-xl shadow-sm">
+                <h3 class="font-bold text-slate-700 mb-4 border-b pb-3">Profil du Cabinet</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-bold text-slate-500">Nom du Cabinet (ex: Dr. Aboura)</label>
+                        <input type="text" id="param-nom" class="border p-2.5 rounded-lg w-full outline-none bg-slate-50 mt-1">
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-slate-500">Spécialité</label>
+                        <input type="text" id="param-spec" class="border p-2.5 rounded-lg w-full outline-none bg-slate-50 mt-1">
+                    </div>
+                    <button onclick="sauvegarderParametres()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg font-bold w-full transition">Sauvegarder les modifications</button>
+                </div>
+            </div>
+
+            <div class="bg-white border p-6 rounded-xl shadow-sm flex flex-col items-center">
+                <h3 class="font-bold text-slate-700 mb-4 border-b pb-3 w-full">QR Code d'accès</h3>
+                <div id="qrcode-container" class="bg-white p-4 border rounded-lg mb-4"></div>
+                <a id="lien-patient-param" target="_blank" class="text-blue-600 underline text-sm mb-4 break-all"></a>
+                <button onclick="telechargerQR()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold transition">Enregistrer l'image QR</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -104,6 +132,7 @@
         var supabaseKey = 'sb_publishable_C0qADTNee-jBxctsla6Saw_RGZMhegS';
         var db = supabase.createClient(supabaseUrl, supabaseKey);
         var userSession = null;
+        var qrCodeObj = null;
 
         db.auth.getSession().then(({ data }) => {
             if (data.session) activerDashboard(data.session.user);
@@ -113,49 +142,81 @@
             var email = document.getElementById('email').value;
             var password = document.getElementById('password').value;
             var { data, error } = await db.auth.signInWithPassword({ email, password });
-            if (error) alert(error.message);
-            else activerDashboard(data.user);
+            if (error) alert(error.message); else activerDashboard(data.user);
         }
 
         async function creerCompte() {
             var email = document.getElementById('email').value;
             var password = document.getElementById('password').value;
             var { error } = await db.auth.signUp({ email, password });
-            if (error) alert(error.message);
-            else alert("Compte créé !");
+            if (error) alert(error.message); else alert("Compte créé !");
         }
 
         function activerDashboard(user) {
             userSession = user;
             document.getElementById('ecran-connexion').classList.add('hidden');
-            document.getElementById('dashboard').classList.remove('hidden');
-            document.getElementById('dashboard').classList.add('flex');
+            document.getElementById('app-main').classList.remove('hidden');
+            document.getElementById('app-main').classList.add('flex');
             
             var lien = window.location.origin + '/patient.html?cabinet=' + user.id;
-            document.getElementById('lien-patient').href = lien;
+            document.getElementById('lien-patient-param').innerText = lien;
+            document.getElementById('lien-patient-param').href = lien;
 
+            // Générer le QR Code
+            document.getElementById('qrcode-container').innerHTML = '';
+            qrCodeObj = new QRCode(document.getElementById("qrcode-container"), {
+                text: lien, width: 200, height: 200, colorDark : "#0f172a", colorLight : "#ffffff"
+            });
+
+            chargerParametres();
             chargerDonnies();
 
             db.channel('global-dashboard')
-              .on('postgres_changes', { event: '*', schema: 'public', table: 'file_attente' }, () => {
-                  chargerDonnies();
-              }).subscribe();
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'file_attente' }, () => { chargerDonnies(); })
+              .subscribe();
         }
 
-        async function seDeconnecter() {
-            await db.auth.signOut();
-            window.location.reload();
+        function changerOnglet(onglet) {
+            ['dashboard', 'stats', 'settings'].forEach(o => {
+                document.getElementById('onglet-' + o).classList.add('hidden');
+                document.getElementById('nav-' + o).className = "px-4 py-2 rounded-lg font-bold text-slate-500 hover:bg-slate-50 transition";
+            });
+            document.getElementById('onglet-' + onglet).classList.remove('hidden');
+            if(onglet === 'dashboard') document.getElementById('onglet-dashboard').classList.add('grid');
+            document.getElementById('nav-' + onglet).className = "px-4 py-2 rounded-lg font-bold bg-blue-50 text-blue-700 transition";
         }
+
+        async function chargerParametres() {
+            var { data } = await db.from('cabinets').select('*').eq('id', userSession.id).single();
+            if (data) {
+                document.getElementById('param-nom').value = data.nom_cabinet || '';
+                document.getElementById('param-spec').value = data.specialite || '';
+            }
+        }
+
+        async function sauvegarderParametres() {
+            var nom = document.getElementById('param-nom').value;
+            var spec = document.getElementById('param-spec').value;
+            await db.from('cabinets').upsert({ id: userSession.id, nom_cabinet: nom, specialite: spec });
+            alert('Profil mis à jour ! Le changement sera visible par les patients.');
+        }
+
+        function telechargerQR() {
+            var canvas = document.querySelector('#qrcode-container canvas');
+            var url = canvas.toDataURL("image/png");
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'QR_Cabinet.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        async function seDeconnecter() { await db.auth.signOut(); window.location.reload(); }
 
         async function chargerDonnies() {
             var debutJournee = new Date(); debutJournee.setHours(0,0,0,0);
-
-            var { data: patients, error } = await db.from('file_attente')
-                .select('*')
-                .eq('medecin_id', userSession.id)
-                .gte('heure_arrivee', debutJournee.toISOString());
-
-            if (error) { console.error(error); return; }
+            var { data: patients } = await db.from('file_attente').select('*').eq('medecin_id', userSession.id).gte('heure_arrivee', debutJournee.toISOString());
             patients = patients || [];
 
             var enAttente = patients.filter(p => p.statut === 'en_attente').sort((a,b) => new Date(a.heure_arrivee) - new Date(b.heure_arrivee));
@@ -163,112 +224,73 @@
             var enPause = patients.filter(p => p.statut === 'en_pause').sort((a,b) => new Date(b.heure_appel) - new Date(a.heure_appel));
             var termines = patients.filter(p => p.statut === 'termine').sort((a,b) => new Date(b.heure_appel) - new Date(a.heure_appel));
 
-            // Rendre Liste Attente
+            // DASHBOARD
             document.getElementById('compteur-attente').innerText = enAttente.length;
-            var ulAttente = document.getElementById('liste-attente');
-            ulAttente.innerHTML = enAttente.map((p, i) => `
+            document.getElementById('liste-attente').innerHTML = enAttente.map((p, i) => `
                 <li class="border border-slate-100 bg-slate-50 p-2.5 rounded-lg flex justify-between items-center">
                     <span class="truncate font-medium text-slate-700"><b>#${i+1}</b> ${p.nom_patient}</span>
-                    ${p.numero_whatsapp === 'URGENT' ? '<span class="text-[10px] bg-red-500 text-white px-2 py-1 rounded-md font-bold tracking-wide uppercase">Urgence</span>' : ''}
-                </li>
-            `).join('') || '<li class="text-slate-400 italic text-center py-4">Aucun patient en attente</li>';
+                    ${p.numero_whatsapp === 'URGENT' ? '<span class="text-[10px] bg-red-500 text-white px-2 py-1 rounded-md font-bold uppercase">Urgence</span>' : ''}
+                </li>`).join('') || '<li class="text-slate-400 italic text-center py-4">Aucun patient</li>';
 
-            // Rendre Patient Actuel en Consultation
             var divActuel = document.getElementById('patient-actuel');
             var divActions = document.getElementById('actions-consultation');
             if (enConsultation.length > 0) {
-                var c = enConsultation[0];
-                divActuel.innerHTML = `<span class="block text-2xl font-black">${c.nom_patient}</span>`;
+                divActuel.innerHTML = `<span class="block text-2xl font-black">${enConsultation[0].nom_patient}</span>`;
                 divActions.classList.remove('hidden');
-                
-                document.getElementById('btn-terminer').onclick = () => changerStatut(c.id, 'termine');
-                document.getElementById('btn-pause').onclick = () => changerStatut(c.id, 'en_pause');
+                document.getElementById('btn-terminer').onclick = () => changerStatut(enConsultation[0].id, 'termine');
+                document.getElementById('btn-pause').onclick = () => changerStatut(enConsultation[0].id, 'en_pause');
             } else {
-                divActuel.innerText = "Aucun";
-                divActions.classList.add('hidden');
+                divActuel.innerText = "Aucun"; divActions.classList.add('hidden');
             }
 
-            // Rendre Patients en Pause
-            var ulPause = document.getElementById('liste-pause');
-            ulPause.innerHTML = enPause.map(p => `
+            document.getElementById('liste-pause').innerHTML = enPause.map(p => `
                 <li class="border border-amber-200 bg-white p-2 rounded-lg flex justify-between items-center">
                     <span class="truncate font-medium text-amber-900">${p.nom_patient}</span>
-                    <button onclick="changerStatut('${p.id}', 'appele')" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2.5 py-1.5 rounded-md font-bold transition">Rappeler</button>
-                </li>
-            `).join('') || '<li class="text-amber-600/50 italic text-center py-2">Aucun</li>';
+                    <button onclick="changerStatut('${p.id}', 'appele')" class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-2.5 py-1.5 rounded-md font-bold">Rappeler</button>
+                </li>`).join('') || '<li class="text-amber-600/50 italic text-center py-2">Aucun</li>';
 
-            // Rendre Historique avec bouton Réintégrer
-            var tbody = document.getElementById('liste-historique');
-            tbody.innerHTML = termines.map(p => {
+            var tempsTotalMins = 0;
+            document.getElementById('liste-historique').innerHTML = termines.map(p => {
                 var diff = p.heure_appel && p.heure_arrivee ? Math.round((new Date(p.heure_appel) - new Date(p.heure_arrivee)) / 60000) : 0;
-                return `<tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                tempsTotalMins += diff;
+                return `<tr class="border-b border-slate-100 hover:bg-slate-50">
                     <td class="py-3 truncate max-w-[120px] font-medium text-slate-700">${p.nom_patient}</td>
                     <td class="py-3 text-center text-slate-500 text-xs">${diff} min</td>
-                    <td class="py-3 text-right">
-                        <button onclick="reintegrerPatient('${p.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-md text-xs font-bold transition" title="Remettre en attente">↺</button>
-                    </td>
+                    <td class="py-3 text-right"><button onclick="reintegrerPatient('${p.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-md text-xs font-bold">↺</button></td>
                 </tr>`;
-            }).join('') || '<tr><td colspan="3" class="text-slate-400 italic text-center py-6">Historique vide</td></tr>';
+            }).join('') || '<tr><td colspan="3" class="text-slate-400 italic text-center py-6">Vide</td></tr>';
+
+            // STATS
+            document.getElementById('stat-total').innerText = termines.length;
+            document.getElementById('stat-attente').innerHTML = termines.length > 0 ? Math.round(tempsTotalMins / termines.length) + ' <span class="text-2xl">min</span>' : '0';
         }
 
         async function ajouterPatient(estUrgent) {
             var nom = document.getElementById('nom').value;
             var phone = estUrgent ? 'URGENT' : document.getElementById('phone').value;
             if (!nom) return alert('Nom obligatoire');
-
-            var debutJournee = new Date();
-            debutJournee.setHours(0,0,0,0);
-            var heureArrivee = estUrgent ? debutJournee.toISOString() : new Date().toISOString();
-
-            await db.from('file_attente').insert([{ 
-                nom_patient: nom, 
-                numero_whatsapp: phone,
-                medecin_id: userSession.id,
-                heure_arrivee: heureArrivee
-            }]);
-            
-            document.getElementById('nom').value = '';
-            document.getElementById('phone').value = '';
-            chargerDonnies(); // Force le rafraîchissement immédiat
+            var debutJournee = new Date(); debutJournee.setHours(0,0,0,0);
+            await db.from('file_attente').insert([{ nom_patient: nom, numero_whatsapp: phone, medecin_id: userSession.id, heure_arrivee: estUrgent ? debutJournee.toISOString() : new Date().toISOString() }]);
+            document.getElementById('nom').value = ''; document.getElementById('phone').value = ''; chargerDonnies();
         }
 
         async function appelerSuivant() {
-            // 1. Clôturer proprement le patient actuel s'il y en a un (évite le bug des patients invisibles)
             var { data: actuel } = await db.from('file_attente').select('id').eq('statut', 'appele').eq('medecin_id', userSession.id);
             if (actuel && actuel.length > 0) {
-                for (let p of actuel) {
-                    await db.from('file_attente').update({ statut: 'termine' }).eq('id', p.id);
-                }
+                for (let p of actuel) await db.from('file_attente').update({ statut: 'termine' }).eq('id', p.id);
             }
-
-            // 2. Chercher le prochain
-            var { data } = await db.from('file_attente')
-                .select('*').eq('statut', 'en_attente').eq('medecin_id', userSession.id)
-                .order('heure_arrivee', { ascending: true }).limit(1);
-
-            if (data && data.length > 0) {
-                await changerStatut(data[0].id, 'appele');
-            } else {
-                chargerDonnies();
-                alert('Plus personne en attente !');
-            }
+            var { data } = await db.from('file_attente').select('*').eq('statut', 'en_attente').eq('medecin_id', userSession.id).order('heure_arrivee', { ascending: true }).limit(1);
+            if (data && data.length > 0) await changerStatut(data[0].id, 'appele'); else { chargerDonnies(); alert('File vide !'); }
         }
 
         async function changerStatut(id, statut) {
-            await db.from('file_attente').update({ 
-                statut: statut,
-                heure_appel: statut === 'appele' ? new Date().toISOString() : null
-            }).eq('id', id);
-            chargerDonnies(); // Force le rafraîchissement immédiat
+            await db.from('file_attente').update({ statut: statut, heure_appel: statut === 'appele' ? new Date().toISOString() : null }).eq('id', id);
+            chargerDonnies();
         }
 
         async function reintegrerPatient(id) {
-            await db.from('file_attente').update({ 
-                statut: 'en_attente',
-                heure_arrivee: new Date().toISOString(),
-                heure_appel: null
-            }).eq('id', id);
-            chargerDonnies(); // Force le rafraîchissement immédiat
+            await db.from('file_attente').update({ statut: 'en_attente', heure_arrivee: new Date().toISOString(), heure_appel: null }).eq('id', id);
+            chargerDonnies();
         }
     </script>
 </body>
