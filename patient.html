@@ -53,8 +53,18 @@
             osc.stop(audioCtx.currentTime + 1.5);
         }
 
-        function demarrer() {
+        async function demarrer() {
             if (!cabinetId) return alert("Erreur : ID Cabinet absent.");
+            
+            // NOUVEAU : Récupérer le nom personnalisé du cabinet
+            var { data: cabinet } = await db.from('cabinets').select('*').eq('id', cabinetId).single();
+            if (cabinet && cabinet.nom_cabinet) {
+                // Modifie le titre au-dessus du formulaire ET au-dessus du ticket
+                var titreCabinet = cabinet.nom_cabinet + (cabinet.specialite ? ' - ' + cabinet.specialite : '');
+                document.querySelector('#ecran-inscription h1').innerText = titreCabinet;
+                document.querySelector('#ecran-ticket p').innerText = titreCabinet;
+            }
+
             if (!monTicketId) {
                 document.getElementById('ecran-inscription').classList.remove('hidden');
             } else {
